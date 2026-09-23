@@ -1,13 +1,11 @@
 import Navbar from "./components/layouts/Navbar";
+import AppRoutes from "./routes/AppRoutes";
 
 function App() {
   return (
     <>
       <Navbar />
-
-      <main>
-        {/* Home page content will come here */}
-      </main>
+      <AppRoutes />
     </>
   );
 }
