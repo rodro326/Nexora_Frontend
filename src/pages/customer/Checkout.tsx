@@ -1,8 +1,21 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCartStore } from "../../store/cartStore";
+import { createOrder } from "../../services/orderApi";
 
 const Checkout = () => {
   const items = useCartStore((state) => state.items);
+
+  const [formData, setFormData] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    postalCode: "",
+  });
+
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
 
   const subtotal = items.reduce(
     (total, item) => total + item.price * item.quantity,
@@ -11,6 +24,70 @@ const Checkout = () => {
 
   const shipping = items.length > 0 ? 100 : 0;
   const total = subtotal + shipping;
+
+  const handleChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = event.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!formData.fullName.trim()) {
+      alert("Please enter your full name.");
+      return;
+    }
+  
+    if (!formData.phone.trim()) {
+      alert("Please enter your phone number.");
+      return;
+    }
+  
+    if (!formData.email.trim()) {
+      alert("Please enter your email address.");
+      return;
+    }
+  
+    if (!formData.address.trim()) {
+      alert("Please enter your shipping address.");
+      return;
+    }
+  
+    if (!formData.city.trim()) {
+      alert("Please enter your city.");
+      return;
+    }
+  
+    if (!formData.postalCode.trim()) {
+      alert("Please enter your postal code.");
+      return;
+    }
+  
+    try {
+      const order = await createOrder({
+        shippingAddress: {
+          fullName: formData.fullName,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+        },
+        paymentMethod,
+      });
+  
+      console.log("Order Created:", order);
+  
+      alert("Order created successfully!");
+    } catch (error) {
+      console.error("Order creation failed:", error);
+  
+      alert("Failed to create order. Please try again.");
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -30,7 +107,7 @@ const Checkout = () => {
 
           <Link
             to="/products"
-            className="mt-6 rounded-lg bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+            className="mt-6 rounded-lg bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
           >
             Continue Shopping
           </Link>
@@ -64,6 +141,7 @@ const Checkout = () => {
             </h2>
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Full Name */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Full Name
@@ -71,11 +149,15 @@ const Checkout = () => {
 
                 <input
                   type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
                   placeholder="Enter your full name"
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400"
                 />
               </div>
 
+              {/* Phone */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Phone Number
@@ -83,11 +165,15 @@ const Checkout = () => {
 
                 <input
                   type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
                   placeholder="01XXXXXXXXX"
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400"
                 />
               </div>
 
+              {/* Email */}
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Email Address
@@ -95,6 +181,9 @@ const Checkout = () => {
 
                 <input
                   type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   placeholder="you@example.com"
                   className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400"
                 />
@@ -109,18 +198,23 @@ const Checkout = () => {
             </h2>
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Address */}
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Address
                 </label>
 
                 <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
                   rows={3}
                   placeholder="House, road, area..."
                   className="w-full resize-none rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400"
                 />
               </div>
 
+              {/* City */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   City
@@ -128,11 +222,15 @@ const Checkout = () => {
 
                 <input
                   type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
                   placeholder="Dhaka"
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-gray-400"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400"
                 />
               </div>
 
+              {/* Postal Code */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Postal Code
@@ -140,8 +238,11 @@ const Checkout = () => {
 
                 <input
                   type="text"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
                   placeholder="1230"
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none focus:border-gray-400"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400"
                 />
               </div>
             </div>
@@ -153,12 +254,13 @@ const Checkout = () => {
               Delivery Method
             </h2>
 
-            <div className="mt-5 space-y-3">
-              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
+            <div className="mt-5">
+              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 p-4 transition hover:bg-gray-50">
                 <div className="flex items-center gap-3">
                   <input
                     type="radio"
                     name="delivery"
+                    value="standard"
                     defaultChecked
                     className="h-4 w-4"
                   />
@@ -188,12 +290,20 @@ const Checkout = () => {
             </h2>
 
             <div className="mt-5 space-y-3">
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
+              {/* COD */}
+              <label
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition ${
+                  paymentMethod === "cod"
+                    ? "border-black bg-gray-50"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
+              >
                 <input
                   type="radio"
                   name="payment"
                   value="cod"
-                  defaultChecked
+                  checked={paymentMethod === "cod"}
+                  onChange={() => setPaymentMethod("cod")}
                   className="h-4 w-4"
                 />
 
@@ -208,11 +318,20 @@ const Checkout = () => {
                 </div>
               </label>
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
+              {/* Online Payment */}
+              <label
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition ${
+                  paymentMethod === "online"
+                    ? "border-black bg-gray-50"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
+              >
                 <input
                   type="radio"
                   name="payment"
                   value="online"
+                  checked={paymentMethod === "online"}
+                  onChange={() => setPaymentMethod("online")}
                   className="h-4 w-4"
                 />
 
@@ -271,23 +390,28 @@ const Checkout = () => {
               ))}
             </div>
 
+            {/* Price Summary */}
             <div className="mt-6 space-y-3 border-t border-gray-200 pt-5 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Subtotal</span>
-                <span className="font-medium">
+
+                <span className="font-medium text-gray-900">
                   ৳{subtotal.toLocaleString()}
                 </span>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-gray-500">Shipping</span>
-                <span className="font-medium">
+
+                <span className="font-medium text-gray-900">
                   ৳{shipping.toLocaleString()}
                 </span>
               </div>
 
               <div className="flex justify-between border-t border-gray-200 pt-4">
-                <span className="font-semibold text-gray-900">Total</span>
+                <span className="font-semibold text-gray-900">
+                  Total
+                </span>
 
                 <span className="text-xl font-bold text-gray-900">
                   ৳{total.toLocaleString()}
@@ -295,8 +419,10 @@ const Checkout = () => {
               </div>
             </div>
 
+            {/* Place Order */}
             <button
               type="button"
+              onClick={handlePlaceOrder}
               className="mt-6 w-full rounded-lg bg-black px-6 py-3 font-semibold text-white transition hover:bg-gray-800"
             >
               Place Order
