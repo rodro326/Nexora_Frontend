@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useCartStore } from "../../store/cartStore";
 
 type ProductCardProps = {
   id: string;
@@ -17,6 +18,16 @@ const ProductCard = ({
   image,
   rating = 4.5,
 }: ProductCardProps) => {
+  const addToCart = useCartStore((state) => state.addToCart);
+
+const handleAddToCart = () => {
+  addToCart({
+    id,
+    name,
+    price,
+    image,
+  });
+};
   return (
     <div className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
       {/* Product Image */}
@@ -72,11 +83,16 @@ const ProductCard = ({
           </p>
 
           <button
-            type="button"
-            className="rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
-          >
-            Add
-          </button>
+  type="button"
+  onClick={(event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleAddToCart();
+  }}
+  className="rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
+>
+  Add
+</button>
         </div>
       </div>
     </div>
