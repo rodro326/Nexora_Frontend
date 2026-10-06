@@ -1,144 +1,155 @@
-import { useMemo, useState } from "react";
-import ProductGrid from "../../components/product/ProductGrid";
+import { useEffect, useMemo, useState } from "react";
+import ProductCard from "../../components/product/ProductCard";
 import ProductFilter from "../../components/product/ProductFilter";
+import { getProducts } from "../../services/productApi";
 
-const products = [
-  {
-    id: "iphone-16-pro-max",
-    name: "iPhone 16 Pro Max",
-    category: "Smartphones",
-    price: 149999,
-    rating: 4.8,
-  },
-  {
-    id: "macbook-pro",
-    name: "MacBook Pro",
-    category: "Laptops",
-    price: 189999,
-    rating: 4.9,
-  },
-  {
-    id: "sony-headphones",
-    name: "Sony Wireless Headphones",
-    category: "Audio",
-    price: 32999,
-    rating: 4.7,
-  },
-  {
-    id: "gaming-laptop",
-    name: "Premium Gaming Laptop",
-    category: "Gaming",
-    price: 129999,
-    rating: 4.6,
-  },
-  {
-    id: "ipad-pro",
-    name: "iPad Pro",
-    category: "Tablets",
-    price: 119999,
-    rating: 4.8,
-  },
-  {
-    id: "samsung-s25",
-    name: "Samsung Galaxy S25 Ultra",
-    category: "Smartphones",
-    price: 139999,
-    rating: 4.7,
-  },
-  {
-    id: "airpods-pro",
-    name: "AirPods Pro",
-    category: "Audio",
-    price: 24999,
-    rating: 4.6,
-  },
-  {
-    id: "logitech-mouse",
-    name: "Logitech Wireless Mouse",
-    category: "Accessories",
-    price: 4999,
-    rating: 4.5,
-  },
-];
+type Product = {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  images: string[];
+  category?: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
+  brand?: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
+};
 
 const Products = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("default");
 
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await getProducts();
+
+        setProducts(response.data || []);
+      } catch (error) {
+        console.error("Failed to load products:", error);
+        setError("Failed to load products.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(
+      new Set(
+        products
+          .map((product) => product.category?.name)
+          .filter(Boolean)
+      )
+    );
+
+    return ["All", ...uniqueCategories];
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
-    let result = products.filter((product) => {
-      const matchesSearch = product.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
+    let result = [...products];
 
-      const matchesCategory =
-        category === "all" || product.category === category;
+    if (search.trim()) {
+      const searchTerm = search.toLowerCase();
 
-      return matchesSearch && matchesCategory;
-    });
+      result = result.filter((product) =>
+        product.name.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    if (category !== "All") {
+      result = result.filter(
+        (product) => product.category?.name === category
+      );
+    }
 
     if (sort === "price-low") {
-      result = [...result].sort((a, b) => a.price - b.price);
+      result.sort((a, b) => a.price - b.price);
     }
 
     if (sort === "price-high") {
-      result = [...result].sort((a, b) => b.price - a.price);
+      result.sort((a, b) => b.price - a.price);
     }
 
-    if (sort === "rating") {
-      result = [...result].sort((a, b) => b.rating - a.rating);
+    if (sort === "name") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     return result;
-  }, [search, category, sort]);
+  }, [products, search, category, sort]);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      {/* Header */}
       <div className="mb-8">
-        <p className="text-sm font-medium text-gray-500">
-          Nexora Store
-        </p>
+        <p className="text-sm font-medium text-gray-500">Nexora Store</p>
 
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
           All Products
         </h1>
 
-        <p className="mt-2 text-gray-600">
-          Explore our latest technology and electronics.
+        <p className="mt-2 text-sm text-gray-500">
+          Explore the latest technology products from Nexora.
         </p>
       </div>
 
-      {/* Filters */}
       <ProductFilter
-        search={search}
-        category={category}
-        sort={sort}
-        onSearchChange={setSearch}
-        onCategoryChange={setCategory}
-        onSortChange={setSort}
-      />
+  search={search}
+  category={category}
+  sort={sort}
+  onSearchChange={setSearch}
+  onCategoryChange={setCategory}
+  onSortChange={setSort}
+/>
 
-      {/* Result Count */}
-      <div className="mb-5 flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {filteredProducts.length} products found
-        </p>
-      </div>
+      {loading && (
+        <div className="flex min-h-[300px] items-center justify-center">
+          <p className="text-sm text-gray-500">Loading products...</p>
+        </div>
+      )}
 
-      {/* Product Grid */}
-      {filteredProducts.length > 0 ? (
-        <ProductGrid products={filteredProducts} />
-      ) : (
-        <div className="rounded-xl border border-gray-200 py-20 text-center">
-          <h2 className="text-lg font-semibold text-gray-900">
-            No products found
-          </h2>
+      {!loading && error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
-          <p className="mt-2 text-sm text-gray-500">
-            Try a different search or category.
+      {!loading && !error && filteredProducts.length === 0 && (
+        <div className="flex min-h-[300px] items-center justify-center">
+          <p className="text-sm text-gray-500">
+            No products found.
           </p>
+        </div>
+      )}
+
+      {!loading && !error && filteredProducts.length > 0 && (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product._id}
+              id={product._id}
+              name={product.name}
+              category={product.category?.name || "Uncategorized"}
+              price={product.price}
+              image={product.images?.[0]}
+            />
+          ))}
         </div>
       )}
     </main>

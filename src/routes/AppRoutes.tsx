@@ -5,6 +5,9 @@ import ProductDetails from "../pages/public/ProductDetails";
 import Categories from "../pages/public/Categories";
 import Cart from "../pages/customer/Cart";
 import Checkout from "../pages/customer/Checkout";
+import Login from "../pages/public/Login";
+import Register from "../pages/public/Register";
+
 
 function AppRoutes() {
   return (
@@ -16,7 +19,8 @@ function AppRoutes() {
       <Route path="/categories" element={<Categories />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/checkout" element={<Checkout />} />
-      <Route path="/login" element={<div>Login Page</div>} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
     </Routes>
   );
 }
