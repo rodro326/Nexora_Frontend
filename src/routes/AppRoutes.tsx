@@ -7,6 +7,8 @@ import Cart from "../pages/customer/Cart";
 import Checkout from "../pages/customer/Checkout";
 import Login from "../pages/public/Login";
 import Register from "../pages/public/Register";
+import VendorDashboard from "../pages/vendor/VendorDashboard";
+import VendorProducts from "../pages/vendor/VendorProducts";
 
 
 function AppRoutes() {
@@ -21,6 +23,8 @@ function AppRoutes() {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+      <Route path="/vendor/products" element={<VendorProducts />} />
     </Routes>
   );
 }

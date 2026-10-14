@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../../services/authApi";
@@ -11,7 +12,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     setError("");
 
@@ -24,11 +27,25 @@ const Login = () => {
       setLoading(true);
 
       const response = await loginUser({
-        email,
+        
+        email: email.trim(),
         password,
       });
+      console.log("Login response keys:", Object.keys(response ?? {}));
+console.log("Login data keys:", Object.keys(response?.data ?? {}));
 
-      console.log("Login successful:", response);
+      const token = response.data?.token;
+      console.log("Logged-in user role:", response.data?.user?.role);
+
+      if (!token) {
+        throw new Error(
+          "Authentication token was not found in the login response."
+        );
+      }
+
+      localStorage.setItem("nexora_token", token);
+
+      console.log("Login successful. Authentication token saved.");
 
       alert("Login successful!");
 
@@ -36,7 +53,11 @@ const Login = () => {
     } catch (error) {
       console.error("Login failed:", error);
 
-      setError("Invalid email or password. Please try again.");
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -84,6 +105,8 @@ const Login = () => {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@example.com"
+                autoComplete="email"
+                required
                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
               />
             </div>
@@ -111,6 +134,8 @@ const Login = () => {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Enter your password"
+                autoComplete="current-password"
+                required
                 className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
               />
             </div>
@@ -143,7 +168,7 @@ const Login = () => {
 
           <div className="mt-6 border-t border-gray-200 pt-6 text-center">
             <p className="text-sm text-gray-500">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 to="/register"
                 className="font-semibold text-gray-900 hover:underline"
