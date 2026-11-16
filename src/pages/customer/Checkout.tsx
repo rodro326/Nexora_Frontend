@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCartStore } from "../../store/cartStore";
 import { createOrder } from "../../services/orderApi";
+import axios from "axios";
 
 const Checkout = () => {
   const items = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -15,7 +19,12 @@ const Checkout = () => {
     postalCode: "",
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">(
+    "cod"
+  );
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const subtotal = items.reduce(
     (total, item) => total + item.price * item.quantity,
@@ -38,54 +47,77 @@ const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     if (!formData.fullName.trim()) {
-      alert("Please enter your full name.");
+      setErrorMessage("Please enter your full name.");
       return;
     }
-  
+
     if (!formData.phone.trim()) {
-      alert("Please enter your phone number.");
+      setErrorMessage("Please enter your phone number.");
       return;
     }
-  
+
     if (!formData.email.trim()) {
-      alert("Please enter your email address.");
+      setErrorMessage("Please enter your email address.");
       return;
     }
-  
+
     if (!formData.address.trim()) {
-      alert("Please enter your shipping address.");
+      setErrorMessage("Please enter your shipping address.");
       return;
     }
-  
+
     if (!formData.city.trim()) {
-      alert("Please enter your city.");
+      setErrorMessage("Please enter your city.");
       return;
     }
-  
+
     if (!formData.postalCode.trim()) {
-      alert("Please enter your postal code.");
+      setErrorMessage("Please enter your postal code.");
       return;
     }
-  
+
     try {
-      const order = await createOrder({
+      setIsSubmitting(true);
+      setErrorMessage("");
+
+      const response = await createOrder({
         shippingAddress: {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          postalCode: formData.postalCode,
+          fullName: formData.fullName.trim(),
+          phone: formData.phone.trim(),
+          address: formData.address.trim(),
+          city: formData.city.trim(),
+          postalCode: formData.postalCode.trim(),
         },
         paymentMethod,
       });
-  
-      console.log("Order Created:", order);
-  
-      alert("Order created successfully!");
+
+      console.log("Order Created:", response);
+
+      const orderId = response?.data?._id;
+
+      clearCart();
+
+      if (orderId) {
+        navigate(`/orders/${orderId}/invoice`);
+      } else {
+        alert("Order created successfully!");
+        navigate("/");
+      }
     } catch (error) {
       console.error("Order creation failed:", error);
-  
-      alert("Failed to create order. Please try again.");
+    
+      if (axios.isAxiosError(error)) {
+        console.error("Backend error response:", error.response?.data);
+    
+        setErrorMessage(
+          error.response?.data?.message ||
+            "Failed to create order. Please try again."
+        );
+      } else {
+        setErrorMessage("Failed to create order. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -141,7 +173,6 @@ const Checkout = () => {
             </h2>
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {/* Full Name */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Full Name
@@ -157,7 +188,6 @@ const Checkout = () => {
                 />
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Phone Number
@@ -173,7 +203,6 @@ const Checkout = () => {
                 />
               </div>
 
-              {/* Email */}
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Email Address
@@ -198,7 +227,6 @@ const Checkout = () => {
             </h2>
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {/* Address */}
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Address
@@ -214,7 +242,6 @@ const Checkout = () => {
                 />
               </div>
 
-              {/* City */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   City
@@ -230,7 +257,6 @@ const Checkout = () => {
                 />
               </div>
 
-              {/* Postal Code */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Postal Code
@@ -394,7 +420,6 @@ const Checkout = () => {
             <div className="mt-6 space-y-3 border-t border-gray-200 pt-5 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Subtotal</span>
-
                 <span className="font-medium text-gray-900">
                   ৳{subtotal.toLocaleString()}
                 </span>
@@ -402,30 +427,34 @@ const Checkout = () => {
 
               <div className="flex justify-between">
                 <span className="text-gray-500">Shipping</span>
-
                 <span className="font-medium text-gray-900">
                   ৳{shipping.toLocaleString()}
                 </span>
               </div>
 
               <div className="flex justify-between border-t border-gray-200 pt-4">
-                <span className="font-semibold text-gray-900">
-                  Total
-                </span>
-
+                <span className="font-semibold text-gray-900">Total</span>
                 <span className="text-xl font-bold text-gray-900">
                   ৳{total.toLocaleString()}
                 </span>
               </div>
             </div>
 
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                {errorMessage}
+              </div>
+            )}
+
             {/* Place Order */}
             <button
               type="button"
               onClick={handlePlaceOrder}
-              className="mt-6 w-full rounded-lg bg-black px-6 py-3 font-semibold text-white transition hover:bg-gray-800"
+              disabled={isSubmitting}
+              className="mt-6 w-full rounded-lg bg-black px-6 py-3 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Place Order
+              {isSubmitting ? "Placing Order..." : "Place Order"}
             </button>
 
             <Link

@@ -1,17 +1,54 @@
 import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
 import { useCartStore } from "../../store/cartStore";
+import { addToCartApi } from "../../services/cartApi";
 
 const ProductDetails = () => {
   const { id } = useParams();
 
   const addToCart = useCartStore((state) => state.addToCart);
 
-  const handleAddToCart = () => {
-    addToCart({
-      id: id || "iphone-16-pro-max",
-      name: "iPhone 16 Pro Max",
-      price: 149999,
-    });
+  const [loading, setLoading] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  const handleAddToCart = async () => {
+    if (!id) {
+      alert("Product ID not found");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Add product to backend cart
+      await addToCartApi(id, quantity);
+
+      // Update local Zustand cart
+      addToCart({
+        id,
+        name: "iPhone 16 Pro Max",
+        price: 149999,
+      });
+
+      alert("Product added to cart successfully!");
+    } catch (error: any) {
+      console.error("Failed to add product to cart:", error);
+
+      alert(
+        error?.response?.data?.message ||
+          "Failed to add product to cart"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const increaseQuantity = () => {
+    setQuantity((prev) => prev + 1);
+  };
+
+  const decreaseQuantity = () => {
+    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
   };
 
   return (
@@ -63,17 +100,19 @@ const ProductDetails = () => {
             <div className="flex w-fit items-center rounded-lg border border-gray-200">
               <button
                 type="button"
+                onClick={decreaseQuantity}
                 className="px-4 py-2 text-lg hover:bg-gray-100"
               >
                 −
               </button>
 
               <span className="px-5 py-2 font-medium">
-                1
+                {quantity}
               </span>
 
               <button
                 type="button"
+                onClick={increaseQuantity}
                 className="px-4 py-2 text-lg hover:bg-gray-100"
               >
                 +
@@ -86,9 +125,10 @@ const ProductDetails = () => {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="rounded-lg bg-black px-6 py-3 font-semibold text-white hover:bg-gray-800"
+              disabled={loading}
+              className="rounded-lg bg-black px-6 py-3 font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Add to Cart
+              {loading ? "Adding..." : "Add to Cart"}
             </button>
 
             <button

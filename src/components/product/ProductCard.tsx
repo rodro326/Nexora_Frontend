@@ -1,5 +1,8 @@
+
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCartStore } from "../../store/cartStore";
+import { addToCartApi } from "../../services/cartApi";
 
 type ProductCardProps = {
   id: string;
@@ -20,16 +23,53 @@ const ProductCard = ({
 }: ProductCardProps) => {
   const addToCart = useCartStore((state) => state.addToCart);
 
-const handleAddToCart = () => {
-  addToCart({
-    id,
-    name,
-    price,
-    image,
-  });
-};
+  const [loading, setLoading] = useState(false);
+
+  const handleAddToCart = async () => {
+    if (!id) {
+      alert("Product ID not found");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Save product to backend cart
+      await addToCartApi(id, 1);
+
+      // Update local cart after successful API request
+      addToCart({
+        id,
+        name,
+        price,
+        image,
+      });
+
+      alert("Product added to cart successfully!");
+    } catch (error) {
+      console.error("Failed to add product:", error);
+
+      const message =
+        (
+          error as {
+            response?: {
+              data?: {
+                message?: string;
+              };
+            };
+          }
+        )?.response?.data?.message ||
+        "Failed to add product to cart";
+
+      alert(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
+
       {/* Product Image */}
       <Link to={`/products/${id}`}>
         <div className="relative flex h-56 items-center justify-center bg-gray-100">
@@ -40,10 +80,11 @@ const handleAddToCart = () => {
               className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             />
           ) : (
-            <span className="text-sm text-gray-400">Product Image</span>
+            <span className="text-sm text-gray-400">
+              Product Image
+            </span>
           )}
 
-          {/* Wishlist */}
           <button
             type="button"
             aria-label="Add to wishlist"
@@ -76,23 +117,20 @@ const handleAddToCart = () => {
           </span>
         </div>
 
-        {/* Price */}
+        {/* Price and Cart */}
         <div className="mt-3 flex items-center justify-between">
           <p className="text-lg font-bold text-gray-900">
-            ৳{price.toLocaleString()}
+            ৳{price.toLocaleString("en-BD")}
           </p>
 
           <button
-  type="button"
-  onClick={(event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    handleAddToCart();
-  }}
-  className="rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
->
-  Add
-</button>
+            type="button"
+            onClick={handleAddToCart}
+            disabled={loading}
+            className="rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Adding..." : "Add"}
+          </button>
         </div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -9,11 +8,21 @@ type Category = {
   name: string;
 };
 
+type User = {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+};
+
 const Navbar = () => {
   const cartItems = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   const navigate = useNavigate();
 
@@ -22,6 +31,21 @@ const Navbar = () => {
     0
   );
 
+  // Check logged-in user
+  useEffect(() => {
+    const savedUser = localStorage.getItem("nexora_user");
+
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error("Failed to parse user data:", error);
+        localStorage.removeItem("nexora_user");
+      }
+    }
+  }, []);
+
+  // Load categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -52,9 +76,21 @@ const Navbar = () => {
     }
   };
 
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("nexora_token");
+    localStorage.removeItem("nexora_user");
+    localStorage.removeItem("nexora_cart");
+
+    clearCart();
+    setUser(null);
+
+    alert("You have been signed out successfully.");
+    navigate("/");
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-[#10172b] text-white shadow-sm">
-
       {/* Top Information Bar */}
       <div className="hidden border-b border-white/10 bg-[#202b3e] sm:block">
         <div className="mx-auto flex h-10 max-w-[1720px] items-center justify-between px-6 lg:px-12">
@@ -75,7 +111,6 @@ const Navbar = () => {
       {/* Main Navigation */}
       <div className="border-b border-white/10">
         <div className="mx-auto flex h-20 max-w-[1720px] items-center gap-5 px-4 sm:px-6 lg:gap-8 lg:px-12">
-
           {/* Mobile Menu Button */}
           <button
             type="button"
@@ -130,7 +165,6 @@ const Navbar = () => {
 
           {/* Actions */}
           <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-5 lg:gap-8">
-
             {/* Wishlist */}
             <Link
               to="/"
@@ -148,19 +182,31 @@ const Navbar = () => {
             >
               <span className="text-2xl">🛒</span>
               <span className="hidden sm:inline">Cart</span>
+
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs font-bold text-white">
                 {cartCount}
               </span>
             </Link>
 
-            {/* Sign In */}
-            <Link
-              to="/login"
-              className="flex items-center gap-2 whitespace-nowrap text-sm text-white hover:text-blue-400"
-            >
-              <span className="text-xl">♙</span>
-              <span>Sign In</span>
-            </Link>
+            {/* Authentication */}
+            {user ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-2 whitespace-nowrap text-sm text-white hover:text-red-400"
+              >
+                <span className="text-xl">⇥</span>
+                <span>Sign Out</span>
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 whitespace-nowrap text-sm text-white hover:text-blue-400"
+              >
+                <span className="text-xl">♙</span>
+                <span>Sign In</span>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -183,7 +229,6 @@ const Navbar = () => {
       {/* Dynamic Category Navigation */}
       <div className="hidden border-b border-white/10 md:block">
         <nav className="mx-auto flex h-14 max-w-[1720px] items-center gap-8 overflow-x-auto px-6 lg:gap-10 lg:px-12">
-
           <Link
             to="/products"
             className="flex shrink-0 items-center gap-3 text-sm font-semibold text-white hover:text-blue-400"

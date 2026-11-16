@@ -27,29 +27,57 @@ const Login = () => {
       setLoading(true);
 
       const response = await loginUser({
-        
         email: email.trim(),
         password,
       });
-      console.log("Login response keys:", Object.keys(response ?? {}));
-console.log("Login data keys:", Object.keys(response?.data ?? {}));
+
+      console.log("Login response:", response);
 
       const token = response.data?.token;
-      console.log("Logged-in user role:", response.data?.user?.role);
+      const user = response.data?.user;
 
-      if (!token) {
+      console.log("Logged-in user:", user);
+
+      if (!token || !user) {
         throw new Error(
-          "Authentication token was not found in the login response."
+          "Authentication information was not found in the login response."
         );
       }
 
-      localStorage.setItem("nexora_token", token);
+      // Check if another user was previously logged in
+      const previousUser = localStorage.getItem("nexora_user");
 
-      console.log("Login successful. Authentication token saved.");
+      if (previousUser) {
+        try {
+          const parsedPreviousUser = JSON.parse(previousUser);
+
+          // Remove previous user's cart when a different user logs in
+          if (parsedPreviousUser._id !== user._id) {
+            localStorage.removeItem("nexora_cart");
+          }
+        } catch {
+          // Remove invalid user data
+          localStorage.removeItem("nexora_user");
+        }
+      }
+
+      // Save current user's authentication information
+      localStorage.setItem("nexora_token", token);
+      localStorage.setItem("nexora_user", JSON.stringify(user));
+
+      console.log("Login successful. User information saved.");
 
       alert("Login successful!");
 
-      navigate("/");
+      // Redirect based on user role
+      // Redirect based on user role
+if (user.role === "admin") {
+  navigate("/admin/dashboard");
+} else if (user.role === "vendor") {
+  navigate("/vendor/dashboard");
+} else {
+  navigate("/");
+}
     } catch (error) {
       console.error("Login failed:", error);
 
